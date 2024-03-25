@@ -1,5 +1,3 @@
-// ignore_for_file: unused_local_variable
-
 import 'package:news_app_cln_arc/features/daily_news/data/models/article.dart';
 import 'package:retrofit/retrofit.dart';
 import 'package:news_app_cln_arc/core/constants/constants.dart';
