@@ -24,7 +24,6 @@ abstract class DataState<T> {
   const DataState({this.data, this.error});
 }
 
-///
 class DataSuccess<T> extends DataState<T> {
   const DataSuccess(T data) : super(data: data);
 }

@@ -339,8 +339,168 @@ And after that we'll create the `article_repository_impl.dart`
 
 
 
+# Full Structure of the Project.
+
+```dart
+Clean Architecture. 
+
+├───assets
+│   └───fonts
+│       └───muli
+├───documentation
+│   └───assets
+│       └───images
+├───lib
+│   ├───config
+│   │   ├───routes
+│   │   └───theme
+│   ├───core
+│   │   ├───constants
+│   │   ├───resources
+│   │   ├───usecases
+│   │   └───util
+│   └───features
+│       └───daily_news
+│           ├───data
+│           │   ├───data_sources
+│           │   │   ├───local
+│           │   │   │   └───DAO
+│           │   │   └───remote
+│           │   ├───models
+│           │   └───repository
+│           ├───domain
+│           │   ├───entities
+│           │   ├───repository
+│           │   └───usecases
+│           └───presentation
+│               ├───bloc
+│               │   └───article
+│               │       ├───local
+│               │       └───remote
+│               ├───pages
+│               │   ├───article_detail
+│               │   ├───home
+│               │   └───saved_article
+│               └───widgets
+├───main.dart
+```
 
 
+
+
+
+
+
+# Understanding Get it
+
+This is a simple **Service Locator**. It can be used instead of `InheritedWidget` or or `Provider` to access objects e.g. from the UI.
+
+Typical usage:
+
+* Accessing service objects lilke REST API clients or database so that they easily can be mockked. 
+* Accessing View/AppModels/Managers/BLoCs from Flutter Views. 
+
+```dart
+class Api {
+  Client client = Client();
+  // ... 
+}
+
+```
+
+The above api contains the code ncessary to communicate with the Joke API used in the app. The network calls maade to the Joke API is handled by the client class from the HTTP package.
+
+```dart
+class Api{
+  Client client;
+
+  Api({this.client});
+}
+```
+
+if we pay attention here the Api class is dependent on the `Client` class and the most basic way to inject this dependency would be topass it through the `Constructor` this way when we need API class somewhere else in the codebase we'd have to pass it in the `Client` class. 
+
+```dart
+Api api = Api(client: Client());
+```
+
+Now in a situation where we also use dependency injection 
+
+```dart
+class HomeScreen extends StatelessWidget {
+  Api api;
+
+  HomeScreen({this.api});
+}
+```
+
+where the API class is needed to call the `HomeScreen` somewhere in the codebase we would pass in the API class that it depends on, and also pass in the client class that the API class depends on.
+
+```dart
+HomeScreen(api: Api(client: Client()));
+```
+!!!!
+Things will get out of controll if we have access classes that has multiple dependencies accross multiple places. !!
+
+So here comes the get_it in play. . .
+
+Here we simple register our Dart objects and the classes they depend on which can then be easily accessed from anywhere. 
+
+first we create a file in the `lib` folder called `injection_container.dart`.
+
+import get_it packet.
+
+```dart
+import 'package:get_it/get_it.dart';
+```
+
+then we need to define an instance of get_it. 
+
+```dart
+final sl = GetIt.instance;
+```
+
+we must define the instance golobally so that we can access this instance in all files and anywhere. This instance is going to hold all the dependencies we need. 
+
+Next we'll create a method named `initializeDependencies()`, it would be called before run app. it will be inside this function where all the classes and contracts will be registered. Subsequently also injected using the `Singleton` instance of get_it stored inside `SL`.
+
+```dart
+Future<void> initializeDependencies() async {
+
+}
+```
+
+using getit classes can be registered in two ways:
+
+|FACTORY|SINGLETON|
+|:-|:-|
+|GET IT --> NEW INSTANCE | GET IT --> SAME INSTANCE|
+
+To register we use the `register singleton` method
+
+```dart
+Future<void> initializeDependencies() async {
+  // Dio
+  sl.registerSingleton<Dio>(Dio());
+  
+  // Dependencies
+  sl.registerSingleton<NewsApiService>(NewsApiService(sl()));
+
+  sl.registerSingleton<ArticleRepository>(
+    ArticleRepositoryImpl(sl())
+  );
+
+  // UseCases
+  sl.registerSingleton<GetArticleUseCase>(
+    GetArticleUseCase(sl())
+  );
+
+  // Blocs
+  sl.registerFactory<RemoteArticlesBloc>(
+    () => RemoteArticlesBloc(sl())
+  )
+}
+```
 
 
 
